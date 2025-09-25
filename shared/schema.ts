@@ -11,10 +11,14 @@ export const textShares = pgTable("text_shares", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertTextShareSchema = createInsertSchema(textShares).pick({
-  originalContent: true,
-  expiresAt: true,
-});
+export const insertTextShareSchema = createInsertSchema(textShares)
+  .pick({
+    originalContent: true,
+    expiresAt: true,
+  })
+  .extend({
+    expiresAt: z.coerce.date(), // Allow ISO string conversion to Date
+  });
 
 export type InsertTextShare = z.infer<typeof insertTextShareSchema>;
 export type TextShare = typeof textShares.$inferSelect;

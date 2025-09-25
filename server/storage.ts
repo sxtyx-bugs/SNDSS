@@ -1,37 +1,68 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { type TextShare, type InsertTextShare } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
-
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createTextShare(share: InsertTextShare): Promise<TextShare>;
+  getTextShare(id: string): Promise<TextShare | undefined>;
+  deleteExpiredShares(): Promise<number>;
+  getAllTextShares(): Promise<TextShare[]>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+  private textShares: Map<string, TextShare>;
 
   constructor() {
-    this.users = new Map();
+    this.textShares = new Map();
+    // Start cleanup interval (every minute)
+    setInterval(() => {
+      this.deleteExpiredShares();
+    }, 60000);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async createTextShare(insertShare: InsertTextShare): Promise<TextShare> {
+    const id = randomUUID().substring(0, 8); // Shorter IDs for easier sharing
+    const now = new Date();
+    
+    const share: TextShare = {
+      ...insertShare,
+      id,
+      manipulatedContent: insertShare.originalContent, // Will be replaced with AI-manipulated version
+      createdAt: now,
+    };
+    
+    this.textShares.set(id, share);
+    return share;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getTextShare(id: string): Promise<TextShare | undefined> {
+    const share = this.textShares.get(id);
+    
+    // Check if expired
+    if (share && new Date() > share.expiresAt) {
+      this.textShares.delete(id);
+      return undefined;
+    }
+    
+    return share;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async deleteExpiredShares(): Promise<number> {
+    const now = new Date();
+    let deletedCount = 0;
+    
+    const entries = Array.from(this.textShares.entries());
+    for (const [id, share] of entries) {
+      if (now > share.expiresAt) {
+        this.textShares.delete(id);
+        deletedCount++;
+      }
+    }
+    
+    return deletedCount;
+  }
+
+  async getAllTextShares(): Promise<TextShare[]> {
+    return Array.from(this.textShares.values());
   }
 }
 

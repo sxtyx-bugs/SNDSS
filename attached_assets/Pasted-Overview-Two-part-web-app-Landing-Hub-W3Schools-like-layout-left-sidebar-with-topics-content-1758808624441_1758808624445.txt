@@ -1,0 +1,124 @@
+Overview
+
+Two-part web app:
+
+Landing/Hub — W3Schools-like layout: left sidebar with topics → content area. Some items deep-link to sharing pages.
+
+Sharing Pad — Clean white interface to paste/save content with unique share URLs.
+
+Core user flows
+
+User visits hub (example: /).
+
+User clicks a sidebar item:
+
+If the item is a tutorial → display tutorial page.
+
+If the item is a “Share” item (or deep-link) → navigate to /share/new or /share/<id> if pre-saved.
+
+In sharing pad: paste content → click Save → server returns /share/<id> → shareable URL opens readable page.
+
+Required features
+
+UI: minimal, readable typography, mobile responsive, W3Schools-like nav.
+
+Editor: plain text area supporting code blocks and basic Markdown rendering.
+
+Save: server-side persistence, unique short ID (6–8 chars) per save.
+
+Read view: clean, read-only view of content at /share/<id>.
+
+Redirection: hub items can point to specific /share/<id> or create new share pages.
+
+Optional: expiry/auto-delete, syntax highlighting, passphrase-protected links.
+
+Tech stack
+
+Frontend: React + React Router + TailwindCSS (or plain CSS)
+
+Backend: Node.js + Express (or Replit server)
+
+DB: SQLite / Lowdb / Firebase (choose depending on hosting)
+
+ID gen: nanoid or shortid
+
+Deploy: Replit (or Vercel + serverless functions)
+
+API Endpoints (suggested)
+
+POST /api/shares — body { content, expiresAt? } → returns { id, url }
+
+GET /api/shares/:id — returns { id, content, createdAt, expiresAt }
+
+DELETE /api/shares/:id — admin or expiry cleanup
+
+GET /api/search?q= — optional search
+
+Data model (simple)
+
+Share:
+
+{
+  "id": "abc123",
+  "content": "text or markdown",
+  "createdAt": "2025-09-25T...",
+  "expiresAt": null
+}
+
+UI wireframe notes
+
+Hub: left sidebar (topics list), top header, content area with tutorial or CTA button “Open share pad”.
+
+Share pad (new): large white text area, Save button, small options: Markdown / Plain / Expiry.
+
+Share read: content centered, show raw + toggle “view source”.
+
+Non-functional
+
+Mobile-first responsive.
+
+Clean accessible typography (system fonts).
+
+Minimal animations for transitions only.
+
+4 — Minimal Replit README stub (paste into repo)
+# Hub + Share demo
+
+## Overview
+This project contains:
+- `client/` — React app: Hub + Share UI
+- `server/` — Express API: save/get shares
+- DB: SQLite or file-based JSON
+
+## Run locally (dev)
+cd server && npm install && npm run dev
+cd client && npm install && npm start
+
+## API
+POST /api/shares  { content } -> { id, url }
+GET  /api/shares/:id -> { id, content }
+
+## Notes
+- Use nanoid for short ids.
+- Use Markdown-it for optional markdown rendering.
+- Implement CORS for client <-> server on Replit.
+
+5 — Small implementation checklist you can send to Replit devs
+
+Scaffold React app (create-react-app or Vite).
+
+Sidebar component with topic list + nested items.
+
+React Router routes: /, /topic/:topicId, /share/new, /share/:id.
+
+Editor page /share/new with POST to /api/shares.
+
+Read page /share/:id fetching /api/shares/:id.
+
+Node/Express server with a small JSON/SQLite DB.
+
+ID generation, CORS, and basic input sanitization.
+
+Styling with Tailwind or CSS to make pages clean & white.
+
+Deploy to Replit, set PORT env, connect DB to persistent storage.

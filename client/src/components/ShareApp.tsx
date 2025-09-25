@@ -34,24 +34,46 @@ export default function ShareApp() {
     setIsSharing(true);
     console.log('Sharing content with AI manipulation...', { content, expirationTime });
     
-    // Simulate API call
-    setTimeout(() => {
-      const shareId = Math.random().toString(36).substring(2, 8);
-      const currentUrl = window.location.origin;
-      const expiresAt = new Date(Date.now() + parseInt(expirationTime) * 60 * 1000).toISOString();
+    try {
+      const expiresAt = new Date(Date.now() + parseInt(expirationTime) * 60 * 1000);
+      
+      const response = await fetch('/api/shares', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalContent: content,
+          expiresAt: expiresAt.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create share');
+      }
+
+      const result = await response.json();
       
       setShareResult({
-        id: shareId,
-        url: `${currentUrl}/share/${shareId}`,
-        expiresAt,
+        id: result.id,
+        url: result.url,
+        expiresAt: result.expiresAt,
       });
-      setIsSharing(false);
       
       toast({
         title: "Share Created",
         description: "Your content has been processed and is ready to share.",
       });
-    }, 2000);
+    } catch (error) {
+      console.error('Error creating share:', error);
+      toast({
+        title: "Failed to Create Share",
+        description: "There was an error processing your content. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const handleCopy = async (text: string) => {

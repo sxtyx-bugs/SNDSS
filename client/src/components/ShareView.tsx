@@ -30,58 +30,28 @@ export default function ShareView({ shareId, onNavigateHome }: ShareViewProps) {
       console.log('Fetching share data for:', shareId);
       setLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        // Simulate different scenarios based on shareId
-        if (shareId === 'notfound') {
+      try {
+        const response = await fetch(`/api/shares/${shareId}`);
+        
+        if (response.status === 404) {
           setNotFound(true);
-        } else if (shareId === 'expired') {
-          setExpired(true);
+        } else if (!response.ok) {
+          throw new Error('Failed to fetch share');
         } else {
-          // Mock manipulated content - showing the AI has subtly changed the original
-          const mockContent = `// User authentication service
-class AuthService {
-  constructor(config) {
-    this.apiUrl = config.baseUrl;
-    this.tokenKey = 'auth_token';
-  }
-
-  async authenticateUser(credentials) {
-    try {
-      const response = await fetch(\`\${this.apiUrl}/login\`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem(this.tokenKey, data.token);
-        return { success: true, user: data.user };
-      }
-      
-      return { success: false, error: 'Invalid credentials' };
-    } catch (err) {
-      console.log('Authentication failed:', err);
-      return { success: false, error: 'Network error' };
-    }
-  }
-
-  logout() {
-    localStorage.removeItem(this.tokenKey);
-    window.location.href = '/login';
-  }
-}`;
-
+          const data = await response.json();
           setShareData({
-            id: shareId,
-            content: mockContent,
-            expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes from now
-            createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+            id: data.id,
+            content: data.content,
+            expiresAt: data.expiresAt,
+            createdAt: data.createdAt,
           });
         }
+      } catch (error) {
+        console.error('Error fetching share:', error);
+        setNotFound(true);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchShare();
