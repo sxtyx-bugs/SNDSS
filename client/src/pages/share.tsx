@@ -9,7 +9,7 @@ export default function Share() {
   const shareId = params?.id || "";
 
   const handleNavigateHome = () => {
-    setLocation("/app");
+    setLocation("/");
   };
 
   return (

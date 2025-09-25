@@ -35,7 +35,12 @@ export default function ShareApp() {
     console.log('Sharing content with AI manipulation...', { content, expirationTime });
     
     try {
-      const expiresAt = new Date(Date.now() + parseInt(expirationTime) * 60 * 1000);
+      // Convert expiration time to milliseconds based on unit (seconds or minutes)
+      const expirationValue = parseInt(expirationTime);
+      const expiresAt = new Date(
+        Date.now() + 
+        (expirationTime.endsWith('s') ? expirationValue * 1000 : expirationValue * 60 * 1000)
+      );
       
       const response = await fetch('/api/shares', {
         method: 'POST',
@@ -143,6 +148,8 @@ export default function ShareApp() {
                     <SelectValue placeholder="Select expiration time" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="30s" data-testid="option-30sec">30 seconds</SelectItem>
+                    <SelectItem value="60s" data-testid="option-60sec">1 minute</SelectItem>
                     <SelectItem value="5" data-testid="option-5min">5 minutes</SelectItem>
                     <SelectItem value="10" data-testid="option-10min">10 minutes</SelectItem>
                     <SelectItem value="30" data-testid="option-30min">30 minutes</SelectItem>
