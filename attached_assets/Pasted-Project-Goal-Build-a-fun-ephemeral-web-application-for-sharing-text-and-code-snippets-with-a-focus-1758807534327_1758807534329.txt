@@ -1,0 +1,59 @@
+Project Goal: Build a fun, ephemeral web application for sharing text and code snippets with a focus on privacy and a unique "undetectable" feature for personal use among friends. The shared content should self-destruct after a set time limit, and the entire application should be simple, no-frills, and run without user accounts.
+
+Core Requirements
+Frontend: Develop a single-page application (SPA) using React and TypeScript with Vite as the build tool. The UI should be clean, modern, and intuitive.
+
+Backend & Database: Utilize Supabase as a "Backend as a Service" for real-time data storage and management. This includes creating a simple database table to store temporary text shares and using Supabase Edge Functions for server-side logic.
+
+Deployment: Deploy the entire stack (React frontend and Supabase Edge Functions) to Vercel for a streamlined and easy deployment process.
+
+Feature Breakdown
+Home Page (/):
+
+A large, clean text area for pasting text or code.
+
+A dropdown menu with predefined time limits (e.g., 5 minutes, 10 minutes, 30 minutes, 1 hour).
+
+A "Share" button.
+
+Upon clicking "Share," the application should display a unique, short URL for the newly created share. This URL should be instantly copyable.
+
+AI-Enhanced Text Manipulation:
+
+Before saving the text to the database, a serverless function (via Supabase Edge Functions) should call an AI model API (e.g., from OpenAI or a similar service).
+
+The AI's task is to introduce subtle changes to the text, such as:
+
+Rewording a few sentences.
+
+Changing some variable names in code snippets.
+
+Adding minor, non-critical errors or typos.
+
+Slightly rephrasing comments or notes.
+
+The AI-manipulated text, not the original, should be what gets saved and shared. This is the core "undetectable" feature.
+
+Share View Page (/share/<unique_id>):
+
+When a user visits a unique URL, they should immediately see the shared content (the AI-manipulated version).
+
+A prominent countdown timer should be visible, showing the remaining time before the content expires.
+
+The page should be read-only.
+
+If the timer reaches zero or if the URL is accessed after the content has been deleted from the database, the page should display a message like "This content has expired."
+
+Security & Ephemerality:
+
+The application should not require any user login or accounts.
+
+The shared data must be stored in memory or a temporary database, with a strict policy of deletion once the timer expires.
+
+Implement a server-side cleanup task (e.g., a Supabase Edge Function with a cron job) to remove expired entries from the database to ensure data is not retained.
+
+Stealth Layer (/ vs. /app):
+
+The root domain (your-domain.com) should display a completely innocuous, static "decoy" page (e.g., a simple contact page or a page explaining a generic "web utility").
+
+The actual application (the home page with the text area) should only be accessible at a sub-path, for example, your-domain.com/app. This is the "Web Spoofing" concept you mentioned, providing a basic layer of misdirection.
