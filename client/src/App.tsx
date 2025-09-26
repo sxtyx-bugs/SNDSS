@@ -13,7 +13,7 @@ import Share from "@/pages/share";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   
   useEffect(() => {
     // Initialize privacy features for all pages
@@ -28,22 +28,48 @@ function Router() {
         link.rel = 'noopener noreferrer';
       });
       
-      // We don't modify document.referrer directly as it's read-only
-      // Instead, we rely on the meta tag approach in privacy.ts
-      
       // For student safety, ensure history doesn't save visits
       if (location.startsWith("/app")) {
-        // Add special meta tag for /app route
+        // Add special meta tags for history control
         const metaHistoryControl = document.createElement('meta');
         metaHistoryControl.name = 'history-control';
         metaHistoryControl.content = 'no-store';
         document.head.appendChild(metaHistoryControl);
+        
+        // Add another meta tag for additional history control
+        const metaPragma = document.createElement('meta');
+        metaPragma.name = 'pragma';
+        metaPragma.content = 'no-cache';
+        document.head.appendChild(metaPragma);
         
         // Set title to something generic for history
         document.title = "Reference Material";
       }
     }
   }, [location]);
+  
+  // Handle the special case of the "H" link in the header
+  const handleAppLinkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Use replace instead of push to avoid adding to history
+    setLocation("/app", true); // The second parameter 'true' means replace instead of push
+  };
+  
+  // Modify the global document to handle app links specially
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'A' && target.getAttribute('href') === '/app') {
+        e.preventDefault();
+        setLocation("/app", true); // Replace instead of push
+      }
+    };
+    
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [setLocation]);
   
   return (
     <Switch>

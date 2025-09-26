@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Update with manipulated content (simulating the AI processing)
-      share.manipulatedContent = manipulatedContent;
+      (share as any).manipulatedContent = manipulatedContent;
       
       // Return only the ID and expiration, not the content
       res.json({
@@ -56,19 +56,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
-  // Cleanup endpoint (for development/testing only)
-  if (process.env.NODE_ENV !== 'production') {
-    app.post("/api/cleanup", async (req, res) => {
-      try {
-        const deletedCount = await storage.deleteExpiredShares();
-        res.json({ deletedCount });
-      } catch (error) {
-        console.error('Error during cleanup:', error);
-        res.status(500).json({ error: 'Cleanup failed' });
-      }
-    });
-  }
 
   const httpServer = createServer(app);
 

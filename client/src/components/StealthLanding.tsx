@@ -1,9 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function StealthLanding() {
+  const [, setLocation] = useLocation();
+  
+  const handleAppLinkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Use replace instead of push to avoid adding to history
+    setLocation("/app", true); // The second parameter 'true' means replace instead of push
+  };
+
   return (
     <div className="min-h-screen bg-[#121212] text-gray-200">
       {/* Stealth Header */}
@@ -14,9 +22,14 @@ export default function StealthLanding() {
               <span className="cursor-pointer text-gray-200 hover:text-gray-400">CodeVault</span>
             </Link>
             <span className="relative ml-1">
-              <Link href="/app">
-                <span className="cursor-pointer text-[#04AA6D] hover:text-[#059862]">H</span>
-              </Link>TML Reference
+              {/* Using onClick handler to ensure history is not saved */}
+              <span 
+                onClick={handleAppLinkClick}
+                className="cursor-pointer text-[#04AA6D] hover:text-[#059862]"
+              >
+                H
+              </span>
+              TML Reference
             </span>
           </h1>
           <div>

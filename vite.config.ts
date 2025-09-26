@@ -4,6 +4,10 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  // >>> BEST SOLUTION FOR STATIC HOSTING DEPLOYMENT (White Screen Fix)
+  // Forces all asset paths (JS, CSS) to be relative, allowing them to load correctly
+  base: './', 
+  
   plugins: [
     react(),
     runtimeErrorOverlay(),
@@ -16,6 +20,7 @@ export default defineConfig({
         ]
       : []),
   ],
+  
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -23,11 +28,19 @@ export default defineConfig({
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  
+  // NOTE: You are currently pointing the root to 'client'. 
+  // This is used as the base for all relative path resolution.
+  root: path.resolve(import.meta.dirname, "client"), 
+  
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    // >>> FIX FOR "No Output Directory named 'dist' found" ERROR 
+    // This setting tells Vite to put the final files in a 'dist' folder
+    // that is RELATIVE to the 'client' folder (the Netlify/Vercel Base Directory).
+    outDir: path.resolve(import.meta.dirname, "client/dist"),
     emptyOutDir: true,
   },
+  
   server: {
     fs: {
       strict: true,
