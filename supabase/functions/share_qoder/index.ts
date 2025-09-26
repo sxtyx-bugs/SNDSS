@@ -16,8 +16,8 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN || !JWT_SECRET) {
 
 // Connect to Upstash Redis
 const redis = await connect({
-  hostname: UPSTASH_REDIS_REST_URL.split("://")[1].split(":")[0],
-  port: parseInt(UPSTASH_REDIS_REST_URL.split(":")[2]),
+  hostname: "modest-grackle-12613.upstash.io",
+  port: 6380,
   password: UPSTASH_REDIS_REST_TOKEN,
   tls: true,
 });

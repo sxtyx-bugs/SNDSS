@@ -85,19 +85,74 @@ export default function ShareApp() {
   };
 
   const handleCopy = async (text: string) => {
+    console.log('Copy function called with text:', text);
+    
     try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied!",
-        description: "URL copied to clipboard.",
-      });
-      console.log('URL copied to clipboard');
+      // Check if we're in a secure context
+      console.log('Secure context:', window.isSecureContext);
+      console.log('Clipboard API available:', !!navigator.clipboard);
+      
+      // Primary method: Modern Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast({
+          title: "Copied!",
+          description: "URL copied to clipboard.",
+        });
+        console.log('URL copied to clipboard via Clipboard API');
+        return;
+      }
+      
+      // Fallback method: Create a temporary textarea
+      console.log('Using fallback copy method');
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        toast({
+          title: "Copied!",
+          description: "URL copied to clipboard.",
+        });
+        console.log('URL copied to clipboard via fallback method');
+      } else {
+        throw new Error('Copy command failed');
+      }
     } catch (err) {
-      toast({
-        title: "Copy Failed",
-        description: "Please copy the URL manually.",
-        variant: "destructive",
-      });
+      console.error('Copy failed:', err);
+      // Final fallback: Select the text for manual copy
+      try {
+        const urlInput = document.querySelector('[data-testid="input-share-url"]') as HTMLInputElement;
+        if (urlInput) {
+          urlInput.select();
+          urlInput.setSelectionRange(0, 99999); // For mobile devices
+          toast({
+            title: "Please Copy Manually",
+            description: "The URL has been selected. Press Ctrl+C (or Cmd+C) to copy.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Copy Failed",
+            description: "Please manually select and copy the URL.",
+            variant: "destructive",
+          });
+        }
+      } catch (selectErr) {
+        toast({
+          title: "Copy Failed",
+          description: "Please manually select and copy the URL.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

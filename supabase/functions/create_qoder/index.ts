@@ -1,5 +1,7 @@
 // --- FILE: supabase/functions/create_qoder/index.ts ---
 
+// --- FILE: supabase/functions/create_qoder/index.ts ---
+
 import { serve } from "std/http/server.ts";
 import { connect } from "redis";
 import { create, getNumericDate } from "djwt";
@@ -8,27 +10,22 @@ import { create, getNumericDate } from "djwt";
 const UPSTASH_REDIS_REST_URL = Deno.env.get("UPSTASH_REDIS_REST_URL");
 const UPSTASH_REDIS_REST_TOKEN = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
 const JWT_SECRET = Deno.env.get("JWT_SECRET");
-const PROJECT_REF = Deno.env.get("PROJECT_REF") || "YOUR_PROJECT_REF";
+const PROJECT_REF = Deno.env.get("PROJECT_REF") || "budgaustyzkcciyscmuw";
 
 // Validate environment variables
-if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN || !JWT_SECRET || !PROJECT_REF) {
+if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN || !JWT_SECRET) {
   throw new Error("Missing required environment variables");
 }
 
 // Connect to Upstash Redis
 const redis = await connect({
-  hostname: UPSTASH_REDIS_REST_URL.split("://")[1].split(":")[0],
-  port: parseInt(UPSTASH_REDIS_REST_URL.split(":")[2]),
+  hostname: "modest-grackle-12613.upstash.io",
+  port: 6380,
   password: UPSTASH_REDIS_REST_TOKEN,
   tls: true,
 });
 
-// Generate a cryptographically secure random ID
-function generateSecureId(length: number = 8): string {
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
+
 
 serve(async (req) => {
   // Only allow POST requests
@@ -77,7 +74,7 @@ serve(async (req) => {
     const jwt = await create({ alg: "HS256", typ: "JWT" }, payload, JWT_SECRET);
 
     // Construct the share URL
-    const shareUrl = `https://${PROJECT_REF}.supabase.co/functions/v1/share?token=${jwt}`;
+    const shareUrl = `https://${PROJECT_REF}.supabase.co/functions/v1/share_qoder?token=${jwt}`;
 
     // Return the share URL with 201 status
     return new Response(JSON.stringify({ url: shareUrl }), {
