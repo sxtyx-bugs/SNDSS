@@ -26,19 +26,28 @@ export function getApiUrl(path: string): string {
  * @returns The response from the API
  */
 export async function createShare(data: any) {
+  console.log('createShare called with:', data);
+  console.log('USE_SUPABASE:', USE_SUPABASE);
+  console.log('API_BASE_URL:', API_BASE_URL);
+  
   // If Supabase is enabled, use Supabase Edge Functions
   if (USE_SUPABASE) {
     const { createSupabaseShare } = await import('@/lib/supabaseApi');
     // Convert existing data format to Supabase format
     const supabaseData = {
-      snippet: data.originalContent,
+      snippet: data.originalContent || data.snippet,
       language: 'plaintext' // Default language
     };
+    console.log('Using Supabase with data:', supabaseData);
     return createSupabaseShare(supabaseData);
   }
   
   // Otherwise, use the existing Vercel API
-  const response = await fetch(getApiUrl('/shares'), {
+  const apiUrl = getApiUrl('/shares');
+  console.log('Making API call to:', apiUrl);
+  console.log('Request data:', data);
+  
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -46,11 +55,17 @@ export async function createShare(data: any) {
     body: JSON.stringify(data),
   });
 
+  console.log('API response status:', response.status);
+  
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('API error response:', errorText);
     throw new Error(`Failed to create share: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('API response result:', result);
+  return result;
 }
 
 /**

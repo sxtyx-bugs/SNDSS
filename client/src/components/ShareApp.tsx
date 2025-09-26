@@ -33,6 +33,11 @@ export default function ShareApp() {
 
     setIsSharing(true);
     console.log('Sharing content with AI manipulation...', { content, expirationTime });
+    console.log('Environment check:', {
+      VITE_USE_SUPABASE: import.meta.env.VITE_USE_SUPABASE,
+      VITE_PUBLIC_API_URL: import.meta.env.VITE_PUBLIC_API_URL,
+      VITE_SUPABASE_PROJECT_URL: import.meta.env.VITE_SUPABASE_PROJECT_URL
+    });
     
     try {
       // Convert expiration time to milliseconds based on unit (seconds or minutes)
@@ -43,22 +48,28 @@ export default function ShareApp() {
       );
       
       // Import the API utility and use it for the request
+      console.log('About to import API utilities...');
       const { createShare, USE_SUPABASE } = await import('@/lib/api');
+      console.log('API utilities imported:', { USE_SUPABASE });
       
       let result;
+      console.log('About to call createShare...');
       if (USE_SUPABASE) {
+        console.log('Using Supabase backend');
         // For Supabase, we use a fixed 30-second expiration
         result = await createShare({
           snippet: content,
           language: 'plaintext'
         });
       } else {
+        console.log('Using Vercel backend');
         // For Vercel, we use the custom expiration time
         result = await createShare({
           originalContent: content,
           expiresAt: expiresAt.toISOString(),
         });
       }
+      console.log('createShare completed with result:', result);
 
       setShareResult({
         id: result.id || 'supabase-share', // Supabase doesn't return an ID, but we need something for the UI
