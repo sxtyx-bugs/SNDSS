@@ -5,8 +5,9 @@ import postgres from "postgres";
 import { textShares } from "@shared/schema";
 import { eq, lt } from "drizzle-orm";
 
-// Check if we're in a Vercel environment or have database credentials
+// Check environment configuration
 const isDatabaseAvailable = process.env.DATABASE_URL && process.env.NODE_ENV === 'production';
+const isRedisAvailable = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // Database client (only initialize if we have credentials)
 let db: ReturnType<typeof drizzle> | null = null;
@@ -19,10 +20,120 @@ if (isDatabaseAvailable) {
   }
 }
 
+// Redis client for ephemeral storage
+class UpstashRedisClient {
+  private baseUrl: string;
+  private token: string;
+
+  constructor() {
+    this.baseUrl = process.env.UPSTASH_REDIS_REST_URL!;
+    this.token = process.env.UPSTASH_REDIS_REST_TOKEN!;
+  }
+
+  async setex(key: string, ttl: number, value: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/setex/${key}/${ttl}/${encodeURIComponent(value)}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Redis setex failed: ${response.status} ${response.statusText}`);
+    }
+  }
+
+  async get(key: string): Promise<string | null> {
+    const response = await fetch(`${this.baseUrl}/get/${key}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`Redis get failed: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.result;
+  }
+
+  async del(key: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/del/${key}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Redis del failed: ${response.status} ${response.statusText}`);
+    }
+  }
+}
+
+const redis = isRedisAvailable ? new UpstashRedisClient() : null;
+
 export interface IStorage {
   createTextShare(share: InsertTextShare): Promise<TextShare>;
   getTextShare(id: string): Promise<TextShare | undefined>;
   deleteExpiredShares(): Promise<number>;
+}
+
+// Redis-based storage implementation for ephemeral shares
+export class RedisStorage implements IStorage {
+  async createTextShare(insertShare: InsertTextShare): Promise<TextShare> {
+    if (!redis) {
+      throw new Error('Redis not available');
+    }
+
+    const id = randomUUID();
+    const share: TextShare = {
+      id,
+      originalContent: insertShare.originalContent,
+      manipulatedContent: insertShare.originalContent, // Will be updated after AI processing
+      expiresAt: insertShare.expiresAt,
+      createdAt: new Date(),
+    };
+
+    // Calculate TTL in seconds
+    const ttl = Math.max(1, Math.floor((new Date(insertShare.expiresAt).getTime() - Date.now()) / 1000));
+    
+    // Store in Redis with expiration
+    await redis.setex(`share:${id}`, ttl, JSON.stringify(share));
+
+    return share;
+  }
+
+  async getTextShare(id: string): Promise<TextShare | undefined> {
+    if (!redis) {
+      throw new Error('Redis not available');
+    }
+
+    const dataString = await redis.get(`share:${id}`);
+    if (!dataString) {
+      return undefined;
+    }
+
+    try {
+      const share = JSON.parse(dataString) as TextShare;
+      // Check if expired (extra safety check)
+      if (new Date(share.expiresAt) < new Date()) {
+        await redis.del(`share:${id}`);
+        return undefined;
+      }
+      return share;
+    } catch (error) {
+      console.error('Error parsing share data:', error);
+      return undefined;
+    }
+  }
+
+  async deleteExpiredShares(): Promise<number> {
+    // Redis handles expiration automatically, but we can implement cleanup if needed
+    return 0;
+  }
 }
 
 // In-memory storage implementation
@@ -131,4 +242,8 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Export the appropriate storage implementation
-export const storage: IStorage = isDatabaseAvailable && db ? new DatabaseStorage() : new MemStorage();
+export const storage: IStorage = isRedisAvailable 
+  ? new RedisStorage() 
+  : isDatabaseAvailable && db 
+    ? new DatabaseStorage() 
+    : new MemStorage();

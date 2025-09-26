@@ -3,7 +3,6 @@
 // --- FILE: supabase/functions/create_qoder/index.ts ---
 
 import { serve } from "std/http/server.ts";
-import { connect } from "redis";
 import { create, getNumericDate } from "djwt";
 
 // Get environment variables
@@ -17,13 +16,44 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN || !JWT_SECRET) {
   throw new Error("Missing required environment variables");
 }
 
-// Connect to Upstash Redis
-const redis = await connect({
-  hostname: "modest-grackle-12613.upstash.io",
-  port: 6380,
-  password: UPSTASH_REDIS_REST_TOKEN,
-  tls: true,
-});
+// Generate a cryptographically secure random ID
+function generateSecureId(length: number = 8): string {
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+// Connect to Upstash Redis using REST API
+const redis = {
+  async setex(key: string, ttl: number, value: string): Promise<void> {
+    const response = await fetch(`${UPSTASH_REDIS_REST_URL}/setex/${key}/${ttl}/${encodeURIComponent(value)}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Redis setex failed: ${response.status}`);
+    }
+  },
+  
+  async get(key: string): Promise<string | null> {
+    const response = await fetch(`${UPSTASH_REDIS_REST_URL}/get/${key}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`Redis get failed: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.result;
+  }
+};
 
 
 

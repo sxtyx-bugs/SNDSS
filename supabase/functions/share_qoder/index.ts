@@ -1,7 +1,6 @@
 // --- FILE: supabase/functions/share_qoder/index.ts ---
 
 import { serve } from "std/http/server.ts";
-import { connect } from "redis";
 import { verify } from "djwt";
 
 // Get environment variables
@@ -14,13 +13,24 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN || !JWT_SECRET) {
   throw new Error("Missing required environment variables");
 }
 
-// Connect to Upstash Redis
-const redis = await connect({
-  hostname: "modest-grackle-12613.upstash.io",
-  port: 6380,
-  password: UPSTASH_REDIS_REST_TOKEN,
-  tls: true,
-});
+// Connect to Upstash Redis using REST API
+const redis = {
+  async get(key: string): Promise<string | null> {
+    const response = await fetch(`${UPSTASH_REDIS_REST_URL}/get/${key}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`Redis get failed: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.result;
+  }
+};
 
 serve(async (req) => {
   // Only allow GET requests
