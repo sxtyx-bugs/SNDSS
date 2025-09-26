@@ -42,32 +42,35 @@ export default function ShareApp() {
         (expirationTime.endsWith('s') ? expirationValue * 1000 : expirationValue * 60 * 1000)
       );
       
-      const response = await fetch('/api/shares', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Import the API utility and use it for the request
+      const { createShare, USE_SUPABASE } = await import('@/lib/api');
+      
+      let result;
+      if (USE_SUPABASE) {
+        // For Supabase, we use a fixed 30-second expiration
+        result = await createShare({
+          snippet: content,
+          language: 'plaintext'
+        });
+      } else {
+        // For Vercel, we use the custom expiration time
+        result = await createShare({
           originalContent: content,
           expiresAt: expiresAt.toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create share');
+        });
       }
 
-      const result = await response.json();
-      
       setShareResult({
-        id: result.id,
+        id: result.id || 'supabase-share', // Supabase doesn't return an ID, but we need something for the UI
         url: result.url,
-        expiresAt: result.expiresAt,
+        expiresAt: USE_SUPABASE ? new Date(Date.now() + 30000).toISOString() : result.expiresAt,
       });
       
       toast({
         title: "Share Created",
-        description: "Your content has been processed and is ready to share.",
+        description: USE_SUPABASE 
+          ? "Your content will be automatically deleted after 30 seconds." 
+          : "Your content has been processed and is ready to share.",
       });
     } catch (error) {
       console.error('Error creating share:', error);

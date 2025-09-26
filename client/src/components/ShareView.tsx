@@ -31,14 +31,21 @@ export default function ShareView({ shareId, onNavigateHome }: ShareViewProps) {
       setLoading(true);
       
       try {
-        const response = await fetch(`/api/shares/${shareId}`);
+        // Import the API utility and use it for the request
+        const { getShare, USE_SUPABASE } = await import('@/lib/api');
         
-        if (response.status === 404) {
-          setNotFound(true);
-        } else if (!response.ok) {
-          throw new Error('Failed to fetch share');
+        if (USE_SUPABASE) {
+          // For Supabase, the shareId is actually a JWT token
+          const data = await getShare(shareId);
+          setShareData({
+            id: 'supabase-share',
+            content: data.content,
+            expiresAt: new Date(Date.now() + 30000).toISOString(), // 30 seconds from now
+            createdAt: new Date().toISOString(),
+          });
         } else {
-          const data = await response.json();
+          // For Vercel, use the existing implementation
+          const data = await getShare(shareId);
           setShareData({
             id: data.id,
             content: data.content,
@@ -46,9 +53,13 @@ export default function ShareView({ shareId, onNavigateHome }: ShareViewProps) {
             createdAt: data.createdAt,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching share:', error);
-        setNotFound(true);
+        if (error.message && (error.message.includes('404') || error.message.includes('expired'))) {
+          setNotFound(true);
+        } else {
+          setNotFound(true);
+        }
       } finally {
         setLoading(false);
       }
