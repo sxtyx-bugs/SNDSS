@@ -70,24 +70,30 @@ export default function ShareApp() {
         });
       }
       console.log('createShare completed with result:', result);
-
       setShareResult({
         id: result.id || 'supabase-share', // Supabase doesn't return an ID, but we need something for the UI
         url: result.url,
         expiresAt: USE_SUPABASE ? new Date(Date.now() + 30000).toISOString() : result.expiresAt,
       });
-      
       toast({
         title: "Share Created",
         description: USE_SUPABASE 
           ? "Your content will be automatically deleted after 30 seconds." 
           : "Your content has been processed and is ready to share.",
       });
-    } catch (error) {
-      console.error('Error creating share:', error);
+    } catch (error: any) {
+      console.error('Detailed error creating share:', error);
+      
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error.response && error.response.data) {
+        errorMessage = error.response.data.error || error.response.data.message;
+      }
+
       toast({
         title: "Failed to Create Share",
-        description: "There was an error processing your content. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

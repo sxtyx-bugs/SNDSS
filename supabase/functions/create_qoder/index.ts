@@ -57,10 +57,20 @@ const redis = {
 
 
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req) => {
+  // Handle OPTIONS requests for CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
   // Only allow POST requests
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      ...corsHeaders,
       status: 405,
       headers: { "Content-Type": "application/json" },
     });
@@ -73,6 +83,7 @@ serve(async (req) => {
     // Validate input
     if (!snippet || typeof snippet !== "string") {
       return new Response(JSON.stringify({ error: "Snippet is required and must be a string" }), {
+        ...corsHeaders,
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -80,6 +91,7 @@ serve(async (req) => {
 
     if (!language || typeof language !== "string") {
       return new Response(JSON.stringify({ error: "Language is required and must be a string" }), {
+        ...corsHeaders,
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -108,12 +120,14 @@ serve(async (req) => {
 
     // Return the share URL with 201 status
     return new Response(JSON.stringify({ url: shareUrl }), {
+      ...corsHeaders,
       status: 201,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Error in create_qoder function:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
+      ...corsHeaders,
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
